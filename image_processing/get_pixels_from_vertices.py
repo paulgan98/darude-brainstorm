@@ -1,8 +1,6 @@
 from math import floor
 from PIL import Image
 import sys
-from IPython.core import ultratb
-sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=False)
 
 
 def get_vertices(box, image):

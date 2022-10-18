@@ -2,7 +2,7 @@ import os
 from google.cloud import vision
 
 def detect_properties_from_image(barr):
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/j/Desktop/work/hackathon/darude-brainstorm/paul-client-secrets.json"
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "../paul-client-secrets.json"
     client = vision.ImageAnnotatorClient()
     image = vision.Image()
     image.content = barr
