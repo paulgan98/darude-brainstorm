@@ -2,9 +2,9 @@ import io
 from PIL import Image
 import sys
 from IPython.core import ultratb
-from crop_clothing import *
+from get_pixels_from_vertices import *
 from find_bound_boxes import *
-from google_vision import *
+from send_cropped_item_for_colors import *
 
 sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=False)
 

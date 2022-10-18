@@ -1,5 +1,5 @@
 import pprint as pp
-from example_res import data
+from example_response_vision_ai import data
 #import json get json from image parse it and name it data
 
 def get_all_boxes():

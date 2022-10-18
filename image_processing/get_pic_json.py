@@ -4,7 +4,7 @@ import os
 from google.cloud import vision
 
 client = vision.ImageAnnotatorClient()
-file_name = os.path.abspath('/Users/j/Desktop/work/hackathon/IMG_6669.jpeg')
+file_name = os.path.abspath('/Users/j/Desktop/work/hackathon/IMG_6669.jpeg') #change to URI
 with io.open(file_name, 'rb') as image_file:
     content = image_file.read()
 
