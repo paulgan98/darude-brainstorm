@@ -34,3 +34,5 @@ colorData %>% ggplot() + geom_line(aes(date, R, colour = "R")) +
   geom_line(aes(date, G, colour = "G")) +
   geom_line(aes(date, B, colour = "B")) +
   scale_color_manual(values = c("Blue","Green", "Red"))
+
+#### I made a change to my code
