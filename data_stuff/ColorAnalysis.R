@@ -35,4 +35,27 @@ colorData %>% ggplot() + geom_line(aes(date, R, colour = "R")) +
   geom_line(aes(date, B, colour = "B")) +
   scale_color_manual(values = c("Blue","Green", "Red"))
 
-#### I made a change to my code
+#### Data analysis
+
+colorData <- read.csv("/Users/Jonathan/Desktop/Nisum/Hackathon/darude-brainstorm/data_sandstorm.csv") %>% 
+  select(-uri) %>% mutate(date = as.Date(substr(date, 1, 10)))
+
+colorData$year <- format(colorData$date, '%Y')
+colorData$month <- format(colorData$date, '%m')
+colorData$week <- week(ymd(colorData$date))
+
+meanYear <- colorData %>% group_by(year) %>% summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
+meanYearMonth <- colorData %>% group_by(year, month) %>% 
+  summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
+meanState <- colorData %>% group_by(state) %>% summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
+meanStateYear <- colorData %>% group_by(state, year) %>% 
+  summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
+meanType <- colorData %>% group_by(name) %>% summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
+
+
+colorData %>% ggplot() + geom_line(aes(date, r, colour = "R")) + 
+  geom_line(aes(date, g, colour = "G")) +
+  geom_line(aes(date, b, colour = "B")) +
+  scale_color_manual(values = c("Blue","Green", "Red")) + xlab("Date") + ylab("RGB value")
+  
+
