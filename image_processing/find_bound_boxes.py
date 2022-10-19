@@ -4,8 +4,7 @@ from example_response_vision_ai import data
 
 def get_all_boxes():
    
-    clothing_dict_set = {'dress', 'shirt', 'hat', 'pants'} # etc
-
+    clothing_dict_set = {'Hat', 'Shirt', 'Coat', 'Dress', 'Skirt', 'Miniskirt', 'Trousers', 'Jeans', 'Shorts', 'Pants', 'Swimwear', 'Jacket', 'Sweater' }
     objects = data['localizedObjectAnnotations']
 
     clothing_objects = []
