@@ -47,11 +47,15 @@ colorData$week <- week(ymd(colorData$date))
 meanYear <- colorData %>% group_by(year) %>% summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
 meanYearMonth <- colorData %>% group_by(year, month) %>% 
   summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
-meanState <- colorData %>% group_by(state) %>% summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
+# meanState <- colorData %>% group_by(state) %>% summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
 meanStateYear <- colorData %>% group_by(state, year) %>% 
   summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
 meanType <- colorData %>% group_by(name) %>% summarize(meanR = mean(r), meanG = mean(g), meanB = mean(b))
 
+meanYear %>% ggplot() + geom_path(aes(year, meanR, colour = "R", group = 1)) + 
+  geom_path(aes(year, meanG, colour = "G", group = 2)) +
+  geom_path(aes(year, meanB, colour = "B", group = 3)) +
+  scale_color_manual(values = c("Blue","Green", "Red")) + xlab("Date") + ylab("RGB value")
 
 colorData %>% ggplot() + geom_line(aes(date, r, colour = "R")) + 
   geom_line(aes(date, g, colour = "G")) +
