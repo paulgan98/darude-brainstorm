@@ -61,5 +61,5 @@ colorData %>% ggplot() + geom_line(aes(date, r, colour = "R")) +
   geom_line(aes(date, g, colour = "G")) +
   geom_line(aes(date, b, colour = "B")) +
   scale_color_manual(values = c("Blue","Green", "Red")) + xlab("Date") + ylab("RGB value")
-  
+
 
