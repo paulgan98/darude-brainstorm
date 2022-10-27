@@ -203,7 +203,7 @@ def main():
 
         img_name, ind = get_next_unprocessed_img(processed_fn=processed_fn,
                                             imgs_folder=instagram_img_folder)
-        print(f"{ind+1}-\t{img_name}")
+        print(f"\n{ind+1}-\t{img_name}")
 
         items_data = get_clothing_items(img_name=img_name)
         temp_df = crop_and_get_colors(items_data)
