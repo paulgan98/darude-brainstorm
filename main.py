@@ -1,27 +1,40 @@
 import io
+from os import listdir, makedirs
+from os.path import isfile, join
 from math import floor
 import os
 from PIL import Image
-import requests
 import pandas as pd
 from google.cloud import vision
 from google.protobuf.json_format import MessageToDict
 
+rgb_data_fn = "data_sandstorm_new.csv" # output rgb data file name
+rgb_data_columns = ["name", "img_name", "r", "g", "b"]
+processed_fn = "processed.txt"  # keeps track of images that have already been processed by google cloud vision api
+instagram_img_folder = "/Users/PaulG/Downloads/instagram_images"  # full path to instagram image folder
+client_secrets_fn = "paul-client-secrets.json"
 
 clothing_dict_set = {'Hat', 'Shirt', 'Coat', 'Dress', 'Skirt', 'Miniskirt', 'Trousers', 'Jeans', 'Shorts', 'Pants', 'Swimwear', 'Jacket', 'Sweater' }
 
 
 # returns list of objects with name, bounding box info, and image date
-def get_clothing_items(row):
+def get_clothing_items(img_name):
     client = vision.ImageAnnotatorClient()
 
+    img = Image.open(join(instagram_img_folder, img_name))
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    img_data = img_byte_arr.getvalue()
+
     image = vision.Image()
-    image.source.image_uri = row["post_url"]
+    image.content = img_data
 
     response = client.object_localization(image=image)
+
     try:
         objects = MessageToDict(response._pb)["localizedObjectAnnotations"]
     except KeyError:
+        print("localizedObjectAnnotations not found")
         return None
 
     clothing_items = []
@@ -41,8 +54,7 @@ def get_clothing_items(row):
     # loop through objects, if obj is object of interest, we add uri and date info and append to clothing_items
     for obj in objects:            
         if obj["name"] in clothing_dict_set:
-            obj["uri"] = row["post_url"]
-            obj["date"] = row["date"]
+            obj["img_name"] = img_name
             clothing_items.append(obj)
 
     print(f"{len(clothing_items)} clothing objects detected")
@@ -59,11 +71,8 @@ def crop_and_get_colors(all_clothes):
 
     data = []
 
-    for clothing_item in all_clothes:
-        uri = clothing_item["uri"]
-
-        response = requests.get(uri)
-        img = Image.open(io.BytesIO(response.content))
+    for i, clothing_item in enumerate(all_clothes):
+        img = Image.open(join(instagram_img_folder, clothing_item["img_name"]))
 
         try:
             vertices = get_vertices(clothing_item, img)
@@ -72,16 +81,19 @@ def crop_and_get_colors(all_clothes):
 
         clothing_item_image = img.crop(vertices)
 
+        img_name = f'{clothing_item["img_name"].split(".")[0]}_{str(i)}.jpg'
+        save_cropped_image(clothing_item_image, clothing_item["name"], img_name)
+
         img_byte_arr = io.BytesIO()
         clothing_item_image.save(img_byte_arr, format='PNG')
-        img_byte_arr = img_byte_arr.getvalue()
+        img_data = img_byte_arr.getvalue()
 
-        rgb = detect_properties_from_image(img_byte_arr)
-        clothing_item["rgb"] = rgb
+        rgb = detect_properties_from_image(img_data)
+        # clothing_item["rgb"] = rgb
 
-        data.append([clothing_item["name"], clothing_item["date"], clothing_item["uri"], *rgb])
+        data.append([clothing_item["name"], clothing_item["img_name"], *rgb])
 
-    df = pd.DataFrame(columns=["name", "date", "uri", "r", "g", "b"], data=data)
+    df = pd.DataFrame(columns=rgb_data_columns, data=data)
 
     return df
  
@@ -126,24 +138,81 @@ def get_pixels_from_vertex(vertex, image):
     return [pixel_x, pixel_y]
 
 
+def set_img_as_processed(img_name, processed_fn):
+    with open(processed_fn, 'r') as f:
+        imgs = f.read().splitlines()
+        imgs = [x for x in imgs if x != ""]
+        imgs.append(img_name)
+    with open(processed_fn, 'w') as g:
+        for im in imgs:
+            g.write(f"{im}\n")
+
+
+def get_next_unprocessed_img(processed_fn, imgs_folder):
+    try:
+        with open(processed_fn, 'r') as f:
+            imgs = f.read().splitlines()
+            imgs = [x for x in imgs if x != ""]
+    except:
+        _ = open(processed_fn, 'w')
+        imgs = []
+
+    all_img_files = get_all_imgs(imgs_folder)
+    processed_imgs = set(imgs)
+
+    i = 0
+    for f in all_img_files:
+        if f not in processed_imgs:
+            return f, i
+        i += 1
+
+    # else all images processed, exit program
+    print("All images processed. Terminating program...")
+    exit(0)
+
+
+# return list of all images in folder
+def get_all_imgs(imgs_folder):
+    all_img_files = [f for f in listdir(imgs_folder) if isfile(join(imgs_folder, f))] # get all files in folder
+    all_img_files = [f for f in all_img_files if f.endswith(('.png', '.jpg', '.jpeg'))] # filter out all image files
+    return all_img_files
+
+
+def save_cropped_image(img, folder, img_name):
+    path = join("crops", folder, img_name)
+    try:
+        img.save(path)
+    except FileNotFoundError: # folder does not exist, create empty folder
+        makedirs(join("crops", folder))
+        img.save(path)
+
+
 def main():
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "paul-client-secrets.json"
-    df = pd.read_csv("data_stuff/data.csv")
-    out_fn = "data_sandstorm.csv"
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = client_secrets_fn
+    # df = pd.read_csv("data_stuff/data.csv")
 
-    for i, row in df.iterrows():
-        print(f"i:{i}")
+    total_num_images = len(get_all_imgs(instagram_img_folder))
+    print(f"{total_num_images} images found. Starting processing...")
+
+    for i in range(total_num_images):
         try:
-            out_df = pd.read_csv(out_fn)
+            out_df = pd.read_csv(rgb_data_fn)
         except FileNotFoundError:
-            # create new dataframe: name, date, uri, r, g, b
-            out_df = pd.DataFrame(columns=["name", "date", "uri", "r", "g", "b"])
+            # create new dataframe: name, img_name, r, g, b
+            out_df = pd.DataFrame(columns=rgb_data_columns)
 
-        items_data = get_clothing_items(row)
+        img_name, ind = get_next_unprocessed_img(processed_fn=processed_fn,
+                                            imgs_folder=instagram_img_folder)
+        print(f"{ind+1}-\t{img_name}")
+
+        items_data = get_clothing_items(img_name=img_name)
         temp_df = crop_and_get_colors(items_data)
         if temp_df is not None:
             out_df = pd.concat([out_df, temp_df])
-            out_df.to_csv(out_fn, index=False)
+            out_df.to_csv(rgb_data_fn, index=False)
+
+        set_img_as_processed(img_name=img_name,
+                             processed_fn=processed_fn)
 
 
 if __name__ == "__main__":
